@@ -1,0 +1,100 @@
+apply plugin: 'checkstyle'
+apply plugin: 'pmd'
+apply plugin: 'jacoco'
+//apply plugin: 'com.github.spotbugs'
+
+checkstyle {
+    toolVersion = '8.42'
+    ignoreFailures = false
+    maxWarnings = 0
+    checkstyleMain {
+        configFile = file("config/checkstyle/checkstyle.xml")
+    }
+
+    checkstyleTest {
+        configFile = file("config/checkstyle/checkstyleTest.xml")
+    }
+}
+
+//spotbugs {
+    //toolVersion = '3.1.12'
+    //ignoreFailures = true
+//}
+
+pmd {
+    toolVersion = '6.21.0'
+    ignoreFailures = false
+    ruleSetFiles = files("config/pmd/ruleset.xml")
+    ruleSets = []
+    //rulesMinimumPriority = 2
+    incrementalAnalysis = true
+}
+
+jacoco {
+    toolVersion = "0.8.7+"
+    reportsDirectory = file("build/reports/jacoco/")
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+    }
+}
+
+tasks.withType(Checkstyle) {
+    reports {
+        xml.required = false
+        html.required = true
+        html.stylesheet resources.text.fromFile('config/checkstyle/xsl/checkstyle-simple.xsl')
+    }
+}
+
+tasks.withType(Pmd) {
+    reports {
+        xml.required = false
+        html.required = true
+    }
+}
+cpd {
+    toolVersion = '6.21.0'
+    minimumTokenCount = 40
+    ignoreFailures = true
+}
+
+cpdCheck {
+    reports {
+        text.required = true
+        xml.required = false
+    }
+    source = sourceSets.main.allJava
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.33
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "surajcm_darkhold"
+        property "sonar.organization", "surajcm"
+        property "sonar.host.url", "https://sonarcloud.io"
+        property "sonar.login", "0c8baf470e3c2eb956994cddcf77739cf32beb03"
+        property "sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml"
+    }
+}
+
+test {
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+}
